@@ -40,7 +40,7 @@ calc_p1 = function(N, m, nx, ny) {
 #2.1 phenotype basic data
 bp_phenotype_disease = readRDS("./data/bp_phenotype_disease.rds") # 4s
 
-#2.2 BDE47_disease
+#2.2 chemical_disease
 disease = readRDS("./data/disease.rds")  # 18s
 ChemicalName_df = disease %>% dplyr::select(1,2) %>% dplyr::distinct() %>% arrange(ChemicalName)
 ChemicalName_display = paste(ChemicalName_df[[2]], ChemicalName_df[[1]], sep = " ")
@@ -49,7 +49,7 @@ ChemicalName_value = ChemicalName_df[[1]]
 ChemicalName_value_pick = ChemicalName_value
 names(ChemicalName_value_pick) = ChemicalName_display
 
-BDE47_selected <- c("2,2',4,4'-tetrabromodiphenyl ether",  
+chemical_selected <- c("2,2',4,4'-tetrabromodiphenyl ether",  
                     "2,2',4,4'-tetrabromodiphenyl ether",
                     "2,2',4,4'-tetrabromodiphenyl ether",
                     "2,2,4,4-tetrabromodiphenyl ether",
@@ -67,7 +67,7 @@ BDE47_selected <- c("2,2',4,4'-tetrabromodiphenyl ether",
 CTD_disease = readRDS("./data/CTD_disease.rds") # 0.1s
 
 #2.5 as_phenotype phenotype
-bde_phenotype = readRDS("./data/bde_phenotype.rds") # 2s
+chemicalselect_phenotype = readRDS("./data/bde_phenotype.rds") # 2s
 
 
 #5.1 relevant data in p-d inference work
@@ -146,7 +146,7 @@ ui <- fluidPage(
                          inputId = "BDE47",
                          label = "Chemical Names:", 
                          # choices = ChemicalName,
-                         selected = BDE47_selected,
+                         selected =chemical_selected,
                          choiceNames = ChemicalName_display, 
                          choiceValues = ChemicalName_value,
                          options = list(
@@ -161,7 +161,7 @@ ui <- fluidPage(
                      #     inputId = "BDE471999",
                      #     label = "Chemical Names (soluciton 2):", 
                      #     choices = ChemicalName_value_pick,
-                     #     selected = BDE47_selected,
+                     #     selected =chemical_selected,
                      #     multiple = TRUE,
                      # 
                      #     options =  pickerOptions (
@@ -190,8 +190,8 @@ ui <- fluidPage(
                      
                      # part 4
                      
-                     selectInput(inputId = "Urogenitalcategory",
-                                 label = "Urogenitalcategory",multiple = T,
+                     selectInput(inputId = "Diseasecategory",
+                                 label = "Diseasecategory",multiple = T,
                                  choices = NULL),
                      ## 添加helptext
                      
@@ -236,7 +236,7 @@ ui <- fluidPage(
                                
                                # h2("xxxx"),
                                
-                               # h3("bde47_phenotype_normal"),
+                               # h3("chemical1_phenotype_normal"),
                                uiOutput("title_part4_table1"),
                                DT::dataTableOutput("part4_table1") %>% shinycssloaders::withSpinner(type = 5),
                                downloadButton("download_part4_table1", "Download..."),
@@ -248,7 +248,7 @@ ui <- fluidPage(
                                
                                hr(),
                                
-                               # h3("bde_urogenital_phenotype"),
+                               # h3("chemical_disease_phenotype"),
                                uiOutput("title_part4_table3"),
                                DT::dataTableOutput("part4_table3") %>% shinycssloaders::withSpinner(type = 5),
                                
@@ -376,8 +376,8 @@ server <- function(input, output, session) {
     # ###---------------------------------------------------------------------------
     # ###part1
     # ###---------------------------------------------------------------------------
-    bde_disease <- reactive({
-        # bde_disease <- disease[disease$ChemicalName %in% input$BDE47,]
+    chemical_disease <- reactive({
+        # chemical_disease <- disease[disease$ChemicalName %in% input$BDE47,]
         
         print(input$BDE47)
         
@@ -390,15 +390,15 @@ server <- function(input, output, session) {
         
     })
     #
-    bde47_phenotype <- reactive({
-        # bde47_phenotype<-bde_phenotype[bde_phenotype$chemicalname
+    chemical1_phenotype <- reactive({
+        # chemical1_phenotype<-chemicalselect_phenotype[chemicalselect_phenotype$chemicalname
         #                                %in% input$BDE47,]
         
         if(is.null(input$BDE47)) {
-            bde_phenotype
+            chemicalselect_phenotype
         } else {
             
-            bde_phenotype %>%
+            chemicalselect_phenotype %>%
                 dplyr::filter(chemicalname %in% input$BDE47)
         }
         
@@ -406,16 +406,16 @@ server <- function(input, output, session) {
     
     output$part1_message <- renderText({
         
-        phen_num <- length(unique(bde47_phenotype()$phenotypeid)) #95 根据选择的化学物初步匹配出**种表型，涉及**项研究。
+        phen_num <- length(unique(chemical1_phenotype()$phenotypeid)) #95 根据选择的化学物初步匹配出**种表型，涉及**项研究。
         
         
-        Ref_num <- length(unique(bde47_phenotype()$pubmedids)) #44 这里把bde47_phenotype数据库展示出来供用户下载
+        Ref_num <- length(unique(chemical1_phenotype()$pubmedids)) #44 这里把chemical1_phenotype数据库展示出来供用户下载
         
         paste0("Based on the selected chemical compounds, an initial match identified ", phen_num, " phenotypes involving ", Ref_num, " studies.")
     })
     # 
     output$part1_table <- DT::renderDataTable({
-        DT::datatable(bde47_phenotype(), 
+        DT::datatable(chemical1_phenotype(), 
                       selection = "single",
                       class = "display nowrap",
                       options = list(pageLength = 20,
@@ -430,7 +430,7 @@ server <- function(input, output, session) {
         },
         # 参数content 固定的用法 file接收filename的字符
         content = function(file) {
-            write.csv(bde47_phenotype(), file, row.names = F)
+            write.csv(chemical1_phenotype(), file, row.names = F)
         }
     )
     # 
@@ -442,21 +442,21 @@ server <- function(input, output, session) {
     # 
     slimmesh_info <- reactive({
         
-        # bde_disease()$DiseaseID %in% CTD_disease$DiseaseID
-        slimmesh_info <- CTD_disease[match(bde_disease()$DiseaseID,table = CTD_disease$DiseaseID),]
+        # chemical_disease()$DiseaseID %in% CTD_disease$DiseaseID
+        slimmesh_info <- CTD_disease[match(chemical_disease()$DiseaseID,table = CTD_disease$DiseaseID),]
         slimmesh_info
     })
     # 
     # 
     disease_slimmesh <- reactive({
-        disease_slimmesh <- data.frame(Disease.Name = bde_disease()$diseasename,SlimMappings=slimmesh_info()$SlimMappings)
+        disease_slimmesh <- data.frame(Disease.Name = chemical_disease()$diseasename,SlimMappings=slimmesh_info()$SlimMappings)
     })
     # 
     # 
     
     
     observe({
-        # disease_slimmesh <- data.frame(Disease.Name = bde_disease()$DiseaseName,SlimMappings=slimmesh_info()$SlimMappings)
+        # disease_slimmesh <- data.frame(Disease.Name = chemical_disease()$DiseaseName,SlimMappings=slimmesh_info()$SlimMappings)
         # strsplit(as.character(slimmesh_info()$SlimMappings),split = "|",fixed = TRUE)
         
         slimmeshcategory<-unique(unlist(strsplit(as.character(slimmesh_info()$SlimMappings),split = "|",fixed = TRUE ))) %>% sort() #29
@@ -538,7 +538,7 @@ server <- function(input, output, session) {
         
         
         if (nrow(disease_slimmesh()) > 1) {
-            # disease_slimmesh <- data.frame(Disease.Name = bde_disease()$DiseaseName,SlimMappings=slimmesh_info()$SlimMappings)
+            # disease_slimmesh <- data.frame(Disease.Name = chemical_disease()$DiseaseName,SlimMappings=slimmesh_info()$SlimMappings)
             # strsplit(as.character(slimmesh_info()$SlimMappings),split = "|",fixed = TRUE)
             
             slimmeshcategory<-unique(unlist(strsplit(as.character(slimmesh_info()$SlimMappings),split = "|",fixed = TRUE ))) %>% sort() #29
@@ -580,7 +580,7 @@ server <- function(input, output, session) {
         
         req(slimmesh_info())
         req(disease_slimmesh())
-        # disease_slimmesh <- data.frame(Disease.Name = bde_disease()$DiseaseName,SlimMappings=slimmesh_info()$SlimMappings)
+        # disease_slimmesh <- data.frame(Disease.Name = chemical_disease()$DiseaseName,SlimMappings=slimmesh_info()$SlimMappings)
         # strsplit(as.character(slimmesh_info()$SlimMappings),split = "|",fixed = TRUE)
         
         slimmeshcategory<-unique(unlist(strsplit(as.character(slimmesh_info()$SlimMappings),split = "|",fixed = TRUE )))  #29
@@ -662,18 +662,18 @@ server <- function(input, output, session) {
     observe({
         req(input$diseaseclass)
         
-        freezeReactiveValue(input, "Urogenitalcategory")
+        freezeReactiveValue(input, "Diseasecategory")
         
         choices = diseaseclass()[[input$diseaseclass]] 
         label = paste0(input$diseaseclass, " ", "Category:")
         
         updateSelectInput(
-            inputId = "Urogenitalcategory",
+            inputId = "Diseasecategory",
             label = label,
             choices = choices,
             selected = head(choices, 3))
     })
-    # # Urogenitalcategory<-c("Alzheimer Disease","Parkinson Disease","Cognitive Dysfunction",'Cognition Disorders',"Memory Disorders")
+    # # Diseasecategory<-c("Alzheimer Disease","Parkinson Disease","Cognitive Dysfunction",'Cognition Disorders',"Memory Disorders")
     # 
     #
     abnormal_anatomy<-c("HL-60 Cells","Cell Line,Transformed",
@@ -684,14 +684,14 @@ server <- function(input, output, session) {
                         "CHO","PC12","Hep G2 Cells","MCF-7 Cells")              # 默认
     # 
     # 
-    bde47_phenotype_normal = reactive({  
-        abanatomyserch<-apply(as.data.frame(abnormal_anatomy),1,grepl,bde47_phenotype()$anatomyterms,ignore.case = TRUE)
+    chemical1_phenotype_normal = reactive({  
+        abanatomyserch<-apply(as.data.frame(abnormal_anatomy),1,grepl,chemical1_phenotype()$anatomyterms,ignore.case = TRUE)
         abanatomyindex<-apply(abanatomyserch,1,sum)
         sum(abanatomyindex)
-        bde47_phenotype_normal<-bde47_phenotype()[!as.logical(abanatomyindex),]
+        chemical1_phenotype_normal<-chemical1_phenotype()[!as.logical(abanatomyindex),]
         
-        print("bde47_phenotype_normal")
-        bde47_phenotype_normal
+        print("chemical1_phenotype_normal")
+        chemical1_phenotype_normal
         
     })
     # 
@@ -704,7 +704,7 @@ server <- function(input, output, session) {
     })
     output$part4_table1 = DT::renderDataTable({
         DT::datatable( 
-            bde47_phenotype_normal(), 
+            chemical1_phenotype_normal(), 
             selection = "single",
             class = "display nowrap",
             options = list(pageLength = 10,scrollX = TRUE)
@@ -717,10 +717,10 @@ server <- function(input, output, session) {
     bp_phenotype_nervous = reactive({
         print("bp_phenotype_nervous")
         
-        req(input$Urogenitalcategory)
+        req(input$Diseasecategory)
         
         bp_phenotype_nervous <-bp_phenotype_disease[
-            bp_phenotype_disease$DiseaseName %in% input$Urogenitalcategory,]
+            bp_phenotype_disease$DiseaseName %in% input$Diseasecategory,]
         
         bp_phenotype_nervous
         
@@ -749,24 +749,24 @@ server <- function(input, output, session) {
     }) %>% bindEvent(input$refresh)
     # 
     # 
-    bde_urogenital_phenotype = reactive({
+    chemical_disease_phenotype = reactive({
         
-        print("bde_urogenital_phenotype")
+        print("chemical_disease_phenotype")
         
-        bde_urogenital_phenotype <-bde47_phenotype_normal()[bde47_phenotype_normal()$phenotypename %in% bp_phenotype_nervous()$GOName,]
-        bde_urogenital_phenotype
+        chemical_disease_phenotype <-chemical1_phenotype_normal()[chemical1_phenotype_normal()$phenotypename %in% bp_phenotype_nervous()$GOName,]
+        chemical_disease_phenotype
     })
     # 
     output$title_part4_table3 = renderUI({
         tagList(
-            # h3("bde_urogenital_phenotype"),
+            # h3("chemical_disease_phenotype"),
             h3(paste0(input$diseaseclass, " ", "Phenotype")),
         )
         
     })
     output$part4_table3 = DT::renderDataTable({
         DT::datatable( 
-            bde_urogenital_phenotype(), 
+            chemical_disease_phenotype(), 
             selection = "single",
             class = "display nowrap",
             options = list(pageLength = 10,scrollX = TRUE)
@@ -780,18 +780,18 @@ server <- function(input, output, session) {
     # 
     output$part4_text1 <- renderText({
         
-        # print(bde47_phenotype_normal())
-        print(length(unique(bde47_phenotype_normal()$phenotypeid))  )                  #92 在正常组织或细胞（非肿瘤组织或细胞）中的表型数量
-        length(unique(bde47_phenotype_normal()$pubmedids))                      #38 及研究数量 输出bde47_phenotype_normal数据框
+        # print(chemical1_phenotype_normal())
+        print(length(unique(chemical1_phenotype_normal()$phenotypeid))  )                  #92 在正常组织或细胞（非肿瘤组织或细胞）中的表型数量
+        length(unique(chemical1_phenotype_normal()$pubmedids))                      #38 及研究数量 输出chemical1_phenotype_normal数据框
         
-        phenotype_normal = bde47_phenotype_normal()
+        phenotype_normal = chemical1_phenotype_normal()
         phenotype_selected = bp_phenotype_nervous()
-        bde_phenotype = bde_urogenital_phenotype()
+        chemicalselect_phenotype = chemical_disease_phenotype()
         
-        paste0("In normal (non-tumor) tissues or cells, chemicals are linked to ",length(unique(phenotype_normal$phenotypeid)),
+        paste0("In normal tissues or cells, chemicals are linked to ",length(unique(phenotype_normal$phenotypeid)),
                " phenotypes (",length(unique(phenotype_normal$pubmedids)), " studies). Selected diseases relate to ",
                length(unique(phenotype_selected$GOID)), " phenotypes, intersecting with them to yield ",
-               length(unique(bde_phenotype$phenotypename)), " overlapping phenotypes.")
+               length(unique(chemicalselect_phenotype$phenotypename)), " overlapping phenotypes.")
     })
     # 
     # 
@@ -821,12 +821,12 @@ server <- function(input, output, session) {
     # 
     # 
     observe({
-        req(input$Urogenitalcategory)
+        req(input$Diseasecategory)
         req(nervous_diease())
         
         # browser()
         
-        CTD_disease_genes_curated <- gene_degree2_disease[gene_degree2_disease$DiseaseName %in% input$Urogenitalcategory,]
+        CTD_disease_genes_curated <- gene_degree2_disease[gene_degree2_disease$DiseaseName %in% input$Diseasecategory,]
         
         # nervousid<- nervous_diease()$DiseaseID
         
@@ -902,15 +902,15 @@ server <- function(input, output, session) {
     # ### 5.1.2
     
     CTD_disease_chems_curated = reactive({
-        req(input$Urogenitalcategory)
+        req(input$Diseasecategory)
         
-        CTD_disease_chems_curated <- chemical_disease_curated[chemical_disease_curated$diseasename %in% input$Urogenitalcategory,]
+        CTD_disease_chems_curated <- chemical_disease_curated[chemical_disease_curated$diseasename %in% input$Diseasecategory,]
         CTD_disease_chems_curated
     }) 
     
     observe({
         # byx<-chemical_degree1_phenotype[chemical_degree1_phenotype$chemicalname %in%  CTD_disease_chems_curated()$ChemicalName,]
-        req(input$Urogenitalcategory)
+        req(input$Diseasecategory)
         req(CTD_disease_chems_curated())
         
         m_degree_chemical<-merge(chemical_degree1_phenotype[chemical_degree1_phenotype$chemicalname %in%  CTD_disease_chems_curated()$ChemicalName,],
@@ -930,7 +930,7 @@ server <- function(input, output, session) {
         record$phenotype_chemical_nx = phenotype_chemical_nx
         
         #ny disease degree inferred by chemicals
-        disease_degree_chemical<-chemical_disease_curated[chemical_disease_curated$diseasename %in% input$Urogenitalcategory,]     # 这里使用了输入
+        disease_degree_chemical<-chemical_disease_curated[chemical_disease_curated$diseasename %in% input$Diseasecategory,]     # 这里使用了输入
         disease_degree_chemical<-table(factor(disease_degree_chemical$diseasename))
         disease_chemical_ny<-data.frame(diseassid=names(disease_degree_chemical),ny=as.numeric(disease_degree_chemical))
         
@@ -969,29 +969,29 @@ server <- function(input, output, session) {
     # 
     part5_result = reactive({
         
-        req(bde_urogenital_phenotype())
+        req(chemical_disease_phenotype())
         req(record$m_degree, record$m_degree_chemical)
         req(record$N_gene, record$N_chemical)
         req(record$phenotype_chemical_nx, record$disease_chemical_ny)
         req(record$phenotype_gene_nx, record$disease_gene_ny)
         
         
-        as_Urogenital_phenotype <- merge(bde_urogenital_phenotype(), bp_phenotype_disease, by.x = "phenotypeid", by.y = "GOID" ,all.x = FALSE, all.y = TRUE)
+        as_disease_phenotype <- merge(chemical_disease_phenotype(), bp_phenotype_disease, by.x = "phenotypeid", by.y = "GOID" ,all.x = FALSE, all.y = TRUE)
         
-        pheno <- unique(bde_urogenital_phenotype()$phenotypeid)
+        pheno <- unique(chemical_disease_phenotype()$phenotypeid)
         
-        as_Urogenital_phenotype<-bp_phenotype_disease[
+        as_disease_phenotype<-bp_phenotype_disease[
             bp_phenotype_disease$GOID %in% pheno,]
         
-        # as_Urogenital_phenotype = as.data.frame(as_Urogenital_phenotype)
+        # as_disease_phenotype = as.data.frame(as_disease_phenotype)
         
-        as_Urogenital_phenotype[is.na(as_Urogenital_phenotype)] <- 0
+        as_disease_phenotype[is.na(as_disease_phenotype)] <- 0
         
         
-        colnames(as_Urogenital_phenotype)
+        colnames(as_disease_phenotype)
         
-        as_Urogenital_phenotype$chemicalname <- strsplit(as.character(as_Urogenital_phenotype$InferenceChemicalNames),split = "|",fixed = TRUE)
-        as_Urogenital_phenotype$genename <- strsplit(as.character(as_Urogenital_phenotype$InferenceGeneSymbols),split = "|",fixed = TRUE)
+        as_disease_phenotype$chemicalname <- strsplit(as.character(as_disease_phenotype$InferenceChemicalNames),split = "|",fixed = TRUE)
+        as_disease_phenotype$genename <- strsplit(as.character(as_disease_phenotype$InferenceGeneSymbols),split = "|",fixed = TRUE)
         
         #####################################################
         # restore record
@@ -1010,34 +1010,34 @@ server <- function(input, output, session) {
         ####################################################
         
         
-        as_Urogenital_phenotype$ny_chemical <- disease_chemical_ny$ny[
-            match(as_Urogenital_phenotype$DiseaseName, disease_chemical_ny$diseassid)]
+        as_disease_phenotype$ny_chemical <- disease_chemical_ny$ny[
+            match(as_disease_phenotype$DiseaseName, disease_chemical_ny$diseassid)]
         
-        as_Urogenital_phenotype$nx_chemical <- phenotype_chemical_nx$nx[
-            match(as_Urogenital_phenotype$GOID, phenotype_chemical_nx$phenotypeid)]
+        as_disease_phenotype$nx_chemical <- phenotype_chemical_nx$nx[
+            match(as_disease_phenotype$GOID, phenotype_chemical_nx$phenotypeid)]
         
-        as_Urogenital_phenotype$ ny_gene <- disease_gene_ny$ny[
-            match(as_Urogenital_phenotype$DiseaseID, disease_gene_ny$diseassid)]
+        as_disease_phenotype$ ny_gene <- disease_gene_ny$ny[
+            match(as_disease_phenotype$DiseaseID, disease_gene_ny$diseassid)]
         
-        as_Urogenital_phenotype$ nx_gene <- phenotype_gene_nx$nx[
-            match(as_Urogenital_phenotype$GOID, phenotype_gene_nx$phenotypeid)]
+        as_disease_phenotype$ nx_gene <- phenotype_gene_nx$nx[
+            match(as_disease_phenotype$GOID, phenotype_gene_nx$phenotypeid)]
         
         
         
-        as_Urogenital_phenotype$p2_gene <- lapply(as_Urogenital_phenotype$genename, function(x) match(x, m_degree$genesymbol)) %>% 
+        as_disease_phenotype$p2_gene <- lapply(as_disease_phenotype$genename, function(x) match(x, m_degree$genesymbol)) %>% 
             # lapply( function(x) m_degree$ni[x]*(m_degree$ni[x]-1)/(75247*75246)) %>%
             lapply( function(x) m_degree$ni[x]*(m_degree$ni[x]-1)/(N_gene * (N_gene-1))) %>%
             sapply(prod)
         #这里的数字是N_gene及N_gene-1，不用展示
         
-        as_Urogenital_phenotype$p2_chemical <- lapply(as_Urogenital_phenotype$chemicalname, function(x) match(as.character(x),m_degree_chemical$chemicalname)) %>% 
+        as_disease_phenotype$p2_chemical <- lapply(as_disease_phenotype$chemicalname, function(x) match(as.character(x),m_degree_chemical$chemicalname)) %>% 
             # lapply( function(x) m_degree_chemical$ni[x]*(m_degree_chemical$ni[x]-1)/(14478*14477)) %>%
             lapply( function(x) m_degree_chemical$ni[x]*(m_degree_chemical$ni[x]-1)/(N_chemical* (N_chemical-1))) %>%
             sapply(prod)
         #这里的数字是N_chemical及N_chemical-1，不用展示
         
         
-        result<- as_Urogenital_phenotype[as_Urogenital_phenotype$DiseaseName %in% input$Urogenitalcategory, ]%>%
+        result<- as_disease_phenotype[as_disease_phenotype$DiseaseName %in% input$Diseasecategory, ]%>%
             dplyr::select(c(1,2,3,4,5,7,11,12,13,14,15,16)) 
         
         #展示result数据框。
@@ -1404,8 +1404,8 @@ server <- function(input, output, session) {
         key_event_male_aop_ec<-aop_ec[aop_ec$`aop id` %in% ao$aop_id,]    
         
         #6.3 key event mapping
-        ias_urogenital_phenotype<-bde_urogenital_phenotype()   # ref
-        phenotype_in_aop <- aop_ec[aop_ec$`process ontology id` %in% unique(ias_urogenital_phenotype$phenotypeid),]
+        ias_disease_phenotype<-chemical_disease_phenotype()   # ref
+        phenotype_in_aop <- aop_ec[aop_ec$`process ontology id` %in% unique(ias_disease_phenotype$phenotypeid),]
         eventbothdir<-intersect(unique(key_event_male_aop$`key event id`),
                                 unique(phenotype_in_aop$`key event id`))
         
@@ -1427,7 +1427,7 @@ server <- function(input, output, session) {
             for (i in 1:length(eventlist)){
                 eventid<-eventlist[i]
                 goterm = key_event_male_aop_GO$`process ontology id`[match(eventid,key_event_male_aop_GO$`key event id`)]
-                judge = ifelse(length(intersect(as.vector(ias_urogenital_phenotype$phenotypeid),
+                judge = ifelse(length(intersect(as.vector(ias_disease_phenotype$phenotypeid),
                                                 as.vector(children[[as.character(goterm)]])) ) == 0,0, 1)#访问列表记得双括号，此外用名称访问时，记得character化
                 mapsuc<-c(mapsuc,judge)
             }
@@ -1439,7 +1439,7 @@ server <- function(input, output, session) {
             for (i in 1:length(eventlist)){
                 eventid<-eventlist[i]
                 goterm = key_event_male_aop_GO$`process ontology id`[match(eventid,key_event_male_aop_GO$`key event id`)]
-                judge = intersect(as.vector(ias_urogenital_phenotype$phenotypeid),
+                judge = intersect(as.vector(ias_disease_phenotype$phenotypeid),
                                   as.vector(children[[as.character(goterm)]]))#访问列表记得双括号，此外用名称访问时，记得character化
                 mapsuc[[i]]<- judge
             }
@@ -1581,5 +1581,3 @@ server <- function(input, output, session) {
 
 
 shinyApp(ui = ui, server = server, options = list(host = "0.0.0.0", port=3675))
-
-
